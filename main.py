@@ -11,26 +11,22 @@ def app():
     st.write("### Converse com a IA:")
 
     mensagem = st.chat_input("Digite sua mensagem:")
+    if not "mensagens" in st.session_state:
+        st.session_state["mensagens"] = []
+
+    for msg in st.session_state["mensagens"]:
+        st.chat_message(msg["role"]).write(msg["parts"][0]["text"])
+    
     if mensagem:
-        if "mensagens" in st.session_state:
-            mensagens = st.session_state["mensagens"]
-        else:
-            mensagens = []
-            st.session_state["mensagens"] = mensagens
         
         # mensagem do usuário
-        mensagens.append({"usuario": "user", "content": mensagem})
+        st.chat_message("user").write(mensagem)
+        st.session_state["mensagens"].append({"role": "user", "parts": [{"text": mensagem}]})
+        print(st.session_state["mensagens"])
 
-        # resposta da IA
-        resposta_ia = client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=mensagem
-        )
-        mensagens.append({"usuario": "assistant", "content": resposta_ia.text})
-
-        for msg in mensagens:
-            with st.chat_message(msg["usuario"]):
-                st.write(msg["content"])
-
+        # resposta da IA com base no histórico de mensagens
+        resposta_ia = client.models.generate_content(model="gemini-3-flash-preview", contents=st.session_state["mensagens"])
+        st.chat_message("assistant").write(resposta_ia.text)
+        st.session_state["mensagens"].append({"role": "assistant", "parts": [{"text": resposta_ia.text}]})
 
 app()
